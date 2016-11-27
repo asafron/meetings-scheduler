@@ -25,12 +25,12 @@ func main() {
 
 	// mux and request handling
 	r := mux.NewRouter()
-	r.Handle("/version", requestQueueHandler(http.HandlerFunc(Version))).Methods("GET")
-	r.Handle("/meetings/addAvailableTime", requestQueueHandler(http.HandlerFunc(mc.AddAvailableTime))).Methods("POST")
-	r.Handle("/meetings/schedule", requestQueueHandler(http.HandlerFunc(mc.ScheduleMeeting))).Methods("POST")
-	r.Handle("/meetings/getAllMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAllMeetings))).Methods("GET")
-	r.Handle("/meetings/getAvailableMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAvailableMeetings))).Methods("GET")
-	r.Handle("/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
+	r.Handle("/ws/version", requestQueueHandler(http.HandlerFunc(Version))).Methods("GET")
+	r.Handle("/ws/meetings/addAvailableTime", requestQueueHandler(http.HandlerFunc(mc.AddAvailableTime))).Methods("POST")
+	r.Handle("/ws/meetings/schedule", requestQueueHandler(http.HandlerFunc(mc.ScheduleMeeting))).Methods("POST")
+	r.Handle("/ws/meetings/getAllMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAllMeetings))).Methods("GET")
+	r.Handle("/ws/meetings/getAvailableMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAvailableMeetings))).Methods("GET")
+	r.Handle("/ws/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
 
 	// http setup
 	http.Handle("/", &MyServer{r})
