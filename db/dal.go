@@ -7,6 +7,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"time"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 )
 
 const dbName = "meeting-scheduler"
@@ -17,6 +18,7 @@ const dbFieldMeetingsMonth = "month"
 const dbFieldMeetingsYear = "year"
 const dbFieldMeetingsStartTime = "start_time"
 const dbFieldMeetingsEndTime = "end_time"
+const dbFieldMeetingsRepresentative = "representative"
 
 type DAL struct {
 	session *mgo.Session
@@ -37,7 +39,7 @@ func (dal *DAL) Initialize() (error) {
 	// Index to ensure no 2 meetings with the same time
 	uniqueIndexes := [][]string {[]string{dbFieldMeetingsDay,
 		dbFieldMeetingsMonth, dbFieldMeetingsYear,
-		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime}}
+		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime, dbFieldMeetingsRepresentative}}
 	for _, element := range uniqueIndexes {
 		index := mgo.Index {
 			Key: element,
@@ -59,7 +61,7 @@ func(dal *DAL) Close() {
 	dal.session.Close()
 }
 
-func (dal *DAL) InsertAvailableMeetingTime(day, month, year, startTime, endTime int) error {
+func (dal *DAL) InsertAvailableMeetingTime(day, month, year, startTime, endTime int, representative string) error {
 	meeting := models.Meeting{}
 	meeting.Id = bson.NewObjectId()
 	meeting.Day = day
@@ -67,6 +69,7 @@ func (dal *DAL) InsertAvailableMeetingTime(day, month, year, startTime, endTime 
 	meeting.Year = year
 	meeting.StartTime = startTime
 	meeting.EndTime = endTime
+	meeting.Representative = representative
 	meeting.UserName = ""
 	meeting.UserEmail = ""
 	meeting.UserPhone = ""
@@ -75,35 +78,46 @@ func (dal *DAL) InsertAvailableMeetingTime(day, month, year, startTime, endTime 
 
 	err := dal.session.DB(dbName).C(dbCollectionMeetings).Insert(meeting)
 	if (err != nil) {
+		log.Error(err)
 		return errors.New(fmt.Sprintf("meeting already exists on: %s", meeting.GetMeetingDateAsString()))
 	}
 
 	return nil
 }
 
-func (dal *DAL) GetMeetingByTime(day, month, year, startTime, endTime int) *models.Meeting {
-	meeting := models.Meeting{}
+func (dal *DAL) GetMeetingByTime(day, month, year, startTime, endTime int) []models.Meeting {
+	meetings := []models.Meeting{}
 	query := bson.M{"day": day, "month": month, "year": year, "start_time": startTime, "end_time": endTime }
-	err := dal.session.DB(dbName).C(dbCollectionMeetings).Find(query).Limit(1).One(&meeting)
+	err := dal.session.DB(dbName).C(dbCollectionMeetings).Find(query).All(&meetings)
 	if (err != nil) {
 		return nil
 	}
-	return &meeting
+	return meetings
 }
 
-func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, name, email, phone string) error {
-	meeting := dal.GetMeetingByTime(day, month, year, startTime, endTime)
-	if meeting == nil {
-		return errors.New("no available meeting at that time")
+func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, name, email, phone, school string) error {
+	allMeetings := dal.GetMeetingByTime(day, month, year, startTime, endTime)
+	if len(allMeetings) == 0 {
+		return errors.New("no meetings at that time")
 	}
-	if len(meeting.UserName) > 0 {
-		return errors.New("meeting time already taken")
+	var meeting models.Meeting
+	meetingAvailable := false
+	for i := 0; i < len(allMeetings); i++ {
+		meeting = allMeetings[i]
+		if len(meeting.UserName) == 0 {
+			meetingAvailable = true
+			break
+		}
+	}
+	if !meetingAvailable {
+		return errors.New("no available meetings at that time")
 	}
 	colQuerier := bson.M{"_id" : meeting.Id}
 	change := bson.M{"$set": bson.M{
 		"user_name": name,
 		"user_email" : email,
 		"user_phone" : phone,
+		"user_school" : school,
 		"updated_at": time.Now().UTC(),
 	}}
 	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQuerier, change)

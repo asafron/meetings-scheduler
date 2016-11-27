@@ -9,9 +9,10 @@ import (
 	"math"
 	"fmt"
 	"github.com/asafron/meetings-scheduler/models"
+	"github.com/bradfitz/slice"
 )
 
-const DEFAULT_MEETING_INTERVAL = 30
+const DEFAULT_MEETING_INTERVAL = 10
 
 type (
 	MeetingsController struct {
@@ -20,11 +21,12 @@ type (
 )
 
 type AvailableMeetingTime struct {
-	Day       int `json:"day"`
-	Month     int `json:"month"`
-	Year      int `json:"year"`
-	StartTime int `json:"start_time"`
-	EndTime   int `json:"end_time"`
+	Day            int    `json:"day"`
+	Month          int    `json:"month"`
+	Year           int    `json:"year"`
+	StartTime      int    `json:"start_time"`
+	EndTime        int    `json:"end_time"`
+	Representative string `json:"representative"`
 }
 
 type AvailableMeetingTimeRequest struct {
@@ -35,6 +37,7 @@ type ScheduleMeetingRequest struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	Phone     string `json:"phone"`
+	School    string `json:"school"`
 	Day       int    `json:"day"`
 	Month     int    `json:"month"`
 	Year      int    `json:"year"`
@@ -66,6 +69,11 @@ func (mc MeetingsController) AddAvailableTime(writer http.ResponseWriter, req *h
 		av := requestObj.Availabilities[i]
 
 		// verify availability data
+		if len(av.Representative) == 0 {
+			log.Error("representative name is mandatory")
+			continue
+		}
+
 		if av.EndTime < av.StartTime {
 			log.Error("end time is before start time, skipping...")
 			continue
@@ -86,7 +94,7 @@ func (mc MeetingsController) AddAvailableTime(writer http.ResponseWriter, req *h
 			meetingStartTime := av.StartTime + (j * DEFAULT_MEETING_INTERVAL)
 			meetingEndTime := meetingStartTime + DEFAULT_MEETING_INTERVAL
 			log.Info(fmt.Sprintf("trying to create a meeting: %d/%d/%d %d-%d", av.Day, av.Month, av.Year, meetingStartTime, meetingEndTime))
-			meetingErr := mc.dal.InsertAvailableMeetingTime(av.Day, av.Month, av.Year, meetingStartTime, meetingEndTime)
+			meetingErr := mc.dal.InsertAvailableMeetingTime(av.Day, av.Month, av.Year, meetingStartTime, meetingEndTime, av.Representative)
 			if meetingErr != nil {
 				log.Error(meetingErr)
 				helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: fmt.Sprintf("%s", meetingErr.Error())})
@@ -113,14 +121,14 @@ func (mc MeetingsController) ScheduleMeeting(writer http.ResponseWriter, req *ht
 	log.Info("request object created")
 
 	// validation
-	if len(requestObj.Name) == 0 || len(requestObj.Email) == 0 || len(requestObj.Phone) == 0 {
+	if len(requestObj.Name) == 0 || len(requestObj.Email) == 0 || len(requestObj.Phone) == 0 || len(requestObj.School) == 0 {
 		log.Error("some of the user details are missing")
 		helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: "some of the user details are missing"})
 		return
 	}
 
 	meetingErr := mc.dal.UpdateMeetingDetails(requestObj.Day, requestObj.Month, requestObj.Year, requestObj.StartTime,
-							requestObj.EndTime, requestObj.Name, requestObj.Email, requestObj.Phone)
+							requestObj.EndTime, requestObj.Name, requestObj.Email, requestObj.Phone, requestObj.School)
 	if meetingErr != nil {
 		log.Error(meetingErr)
 		helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: fmt.Sprintf("%s", meetingErr.Error())})
@@ -151,7 +159,21 @@ func (mc MeetingsController) GetAvailableMeetings(writer http.ResponseWriter, re
 		meetingResponse.Meetings = meetings
 	}
 
-	// TODO: need to order the dates...
+	slice.Sort(meetings[:], func(i, j int) bool {
+		if meetings[i].Year != meetings[j].Year {
+			return meetings[i].Year < meetings[j].Year
+		} else if meetings[i].Month != meetings[j].Month {
+			return meetings[i].Month < meetings[j].Month
+		} else if meetings[i].Day != meetings[j].Day {
+			return meetings[i].Day < meetings[j].Day
+		} else if meetings[i].StartTime != meetings[j].StartTime {
+			return meetings[i].StartTime < meetings[j].StartTime
+		} else if meetings[i].EndTime != meetings[j].EndTime {
+			return meetings[i].StartTime < meetings[j].StartTime
+		} else {
+			return true // arbitrary
+		}
+	})
 
 	writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(writer).Encode(&meetingResponse)
