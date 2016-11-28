@@ -72,7 +72,7 @@ type VersionResponse struct {
 }
 
 func Version(writer http.ResponseWriter, req *http.Request) {
-	res := VersionResponse{ Version: "1"}
+	res := VersionResponse{ Version: "2"}
 	js, err := json.Marshal(res)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
