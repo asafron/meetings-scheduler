@@ -22,15 +22,19 @@ func main() {
 
 	// controllers
 	mc := controllers.NewMeetingsController(dal)
+	ac := controllers.NewAdminController(dal)
 
 	// mux and request handling
 	r := mux.NewRouter()
 	r.Handle("/ws/version", requestQueueHandler(http.HandlerFunc(Version))).Methods("GET")
+	// client
 	r.Handle("/ws/meetings/addAvailableTime", requestQueueHandler(http.HandlerFunc(mc.AddAvailableTime))).Methods("POST")
 	r.Handle("/ws/meetings/schedule", requestQueueHandler(http.HandlerFunc(mc.ScheduleMeeting))).Methods("POST")
-	r.Handle("/ws/meetings/getAllMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAllMeetings))).Methods("GET")
+	//r.Handle("/ws/meetings/getAllMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAllMeetings))).Methods("GET")
 	r.Handle("/ws/meetings/getAvailableMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAvailableMeetings))).Methods("GET")
-	r.Handle("/ws/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
+	//r.Handle("/ws/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
+	// admin
+	r.Handle("/ws/admin/getAllMeetingStatus", requestQueueHandler(http.HandlerFunc(ac.ManagerGetAllMeetings))).Methods("POST")
 
 	// http setup
 	http.Handle("/", &MyServer{r})
