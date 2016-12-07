@@ -21,6 +21,7 @@ type Meeting struct {
 	UserEmail      string        `json:"user_email" bson:"user_email"`
 	UserPhone      string        `json:"user_phone" bson:"user_phone"`
 	UserSchool     string        `json:"user_school" bson:"user_school"`
+	UserIdNumber   string        `json:"user_id_number" bson:"user_id_number"`
 	CreatedAt      time.Time     `json:"created_at" bson:"created_at"`
 	UpdatedAt      time.Time     `json:"updated_at" bson:"updated_at"`
 }

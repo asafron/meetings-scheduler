@@ -73,6 +73,8 @@ func (dal *DAL) InsertAvailableMeetingTime(day, month, year, startTime, endTime 
 	meeting.UserName = ""
 	meeting.UserEmail = ""
 	meeting.UserPhone = ""
+	meeting.UserSchool = ""
+	meeting.UserIdNumber = ""
 	meeting.CreatedAt = time.Now().UTC()
 	meeting.UpdatedAt = time.Now().UTC()
 
@@ -95,12 +97,14 @@ func (dal *DAL) GetMeetingByTime(day, month, year, startTime, endTime int) []mod
 	return meetings
 }
 
-func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, name, email, phone, school string) error {
+func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, name, email, phone, school, idNumber string) error {
 	allMeetings := dal.GetMeetingByTime(day, month, year, startTime, endTime)
 	if len(allMeetings) == 0 {
 		return errors.New("no meetings at that time")
 	}
 	var meeting models.Meeting
+
+	// check if meeting time available
 	meetingAvailable := false
 	for i := 0; i < len(allMeetings); i++ {
 		meeting = allMeetings[i]
@@ -112,12 +116,29 @@ func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, n
 	if !meetingAvailable {
 		return errors.New("no available meetings at that time")
 	}
+
+	// check if id number already exists
+	allMeetings = dal.GetAllMeetings()
+	idNumberExists := false
+	for i := 0; i < len(allMeetings); i++ {
+		meeting = allMeetings[i]
+		if meeting.UserIdNumber == idNumber {
+			log.Info(fmt.Sprintf("interation # %d", i))
+			idNumberExists = true
+			break
+		}
+	}
+	if idNumberExists {
+		return errors.New("a meeting with the following id number already exists")
+	}
+
 	colQuerier := bson.M{"_id" : meeting.Id}
 	change := bson.M{"$set": bson.M{
 		"user_name": name,
 		"user_email" : email,
 		"user_phone" : phone,
 		"user_school" : school,
+		"user_id_number" : idNumber,
 		"updated_at": time.Now().UTC(),
 	}}
 	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQuerier, change)

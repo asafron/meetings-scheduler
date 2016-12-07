@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/asafron/meetings-scheduler/models"
 	"github.com/bradfitz/slice"
+	//"github.com/asafron/meetings-scheduler/mailer"
 )
 
 const DEFAULT_MEETING_INTERVAL = 10
@@ -38,6 +39,7 @@ type ScheduleMeetingRequest struct {
 	Email     string `json:"email"`
 	Phone     string `json:"phone"`
 	School    string `json:"school"`
+	IdNumber  string `json:"id_number"`
 	Day       int    `json:"day"`
 	Month     int    `json:"month"`
 	Year      int    `json:"year"`
@@ -121,19 +123,25 @@ func (mc MeetingsController) ScheduleMeeting(writer http.ResponseWriter, req *ht
 	log.Info("request object created")
 
 	// validation
-	if len(requestObj.Name) == 0 || len(requestObj.Email) == 0 || len(requestObj.Phone) == 0 || len(requestObj.School) == 0 {
+	if len(requestObj.Name) == 0 || len(requestObj.Email) == 0 || len(requestObj.Phone) == 0 || len(requestObj.School) == 0 || len(requestObj.IdNumber) == 0 {
 		log.Error("some of the user details are missing")
 		helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: "some of the user details are missing"})
 		return
 	}
 
 	meetingErr := mc.dal.UpdateMeetingDetails(requestObj.Day, requestObj.Month, requestObj.Year, requestObj.StartTime,
-							requestObj.EndTime, requestObj.Name, requestObj.Email, requestObj.Phone, requestObj.School)
+							requestObj.EndTime, requestObj.Name, requestObj.Email, requestObj.Phone, requestObj.School, requestObj.IdNumber)
 	if meetingErr != nil {
 		log.Error(meetingErr)
 		helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: fmt.Sprintf("%s", meetingErr.Error())})
 		return
 	}
+
+	// NOT WORKING
+	//mailErr := mailer.SendMail([]string{"asaf@groboot.com"}, "MOFET > New meeting scheduled", "These are the details", "asaf@groboot.com", "asaf@groboot.com", "Bugv2304", "smtp.gmail.com", 465, "")
+	//if mailErr != nil {
+	//	log.Error(mailErr)
+	//}
 
 	helpers.JsonResponse(writer, http.StatusOK, helpers.MinimalResponse{Success:true})
 	return
