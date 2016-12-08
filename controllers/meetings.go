@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"github.com/asafron/meetings-scheduler/models"
 	"github.com/bradfitz/slice"
-	//"github.com/asafron/meetings-scheduler/mailer"
+	"github.com/asafron/meetings-scheduler/mailer"
+	"github.com/asafron/meetings-scheduler/config"
 )
 
 const DEFAULT_MEETING_INTERVAL = 10
@@ -137,11 +138,35 @@ func (mc MeetingsController) ScheduleMeeting(writer http.ResponseWriter, req *ht
 		return
 	}
 
-	// NOT WORKING
-	//mailErr := mailer.SendMail([]string{"asaf@groboot.com"}, "MOFET > New meeting scheduled", "These are the details", "asaf@groboot.com", "asaf@groboot.com", "Bugv2304", "smtp.gmail.com", 465, "")
-	//if mailErr != nil {
-	//	log.Error(mailErr)
-	//}
+	configWrapper := config.GetConfigWrapper()
+	mailErr := mailer.SendMail([]string{requestObj.Email},
+		"תיאום ריאיון - כיתת מופת",
+		"שלום רב\n\n" +
+		"תודה רבה על שתיאמת ריאיון לכיתת מופת.\n\n" +
+		"להלן פרטי התלמיד כפי שהתקבלו:\n" +
+			requestObj.Name + "\n" + requestObj.IdNumber + "\n" + requestObj.Email + "\n" + requestObj.Phone + "\n" + requestObj.School + "\n\n" +
+		"מועד הפגישה:\n" +
+		models.GetMeetingDateAsString(requestObj.Day, requestObj.Month, requestObj.Year, requestObj.StartTime, requestObj.EndTime) +
+		"\n\n" +
+		"בברכה,\n" +
+		"צוות מופת, בית הספר שרת",
+		configWrapper.GetCurrent().EmailServerFrom,
+		configWrapper.GetCurrent().EmailServerUsername,
+		configWrapper.GetCurrent().EmailServerPassword,
+		configWrapper.GetCurrent().EmailServerAddress,
+		configWrapper.GetCurrent().EmailServerPort,
+		configWrapper.GetCurrent().EmailServerBcc)
+	if mailErr != nil {
+		mailer.SendMail([]string{configWrapper.GetCurrent().EmailServerBcc},
+			"Error in MOFET server",
+			"Check the following error: " + fmt.Sprint(mailErr),
+			configWrapper.GetCurrent().EmailServerFrom,
+			configWrapper.GetCurrent().EmailServerUsername,
+			configWrapper.GetCurrent().EmailServerPassword,
+			configWrapper.GetCurrent().EmailServerAddress,
+			configWrapper.GetCurrent().EmailServerPort,
+			configWrapper.GetCurrent().EmailServerBcc)
+	}
 
 	helpers.JsonResponse(writer, http.StatusOK, helpers.MinimalResponse{Success:true})
 	return

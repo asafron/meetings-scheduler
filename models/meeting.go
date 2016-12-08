@@ -33,3 +33,11 @@ func (meeting Meeting) GetMeetingDateAsString() string {
 		int(math.Floor(float64(meeting.EndTime)/float64(MINUTES_IN_HOUR))),
 		int(math.Remainder(float64(meeting.EndTime), MINUTES_IN_HOUR)))
 }
+
+func GetMeetingDateAsString (day, month, year, startTime, endTime int) string {
+	return fmt.Sprintf("%d/%d/%d %d:%d-%d:%d", day, month, year,
+		int(math.Floor(float64(startTime)/float64(MINUTES_IN_HOUR))),
+		int(math.Remainder(float64(startTime), MINUTES_IN_HOUR)),
+		int(math.Floor(float64(endTime)/float64(MINUTES_IN_HOUR))),
+		int(math.Remainder(float64(endTime), MINUTES_IN_HOUR)))
+}

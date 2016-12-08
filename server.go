@@ -7,16 +7,18 @@ import (
 	"encoding/json"
 	"github.com/asafron/meetings-scheduler/db"
 	"github.com/asafron/meetings-scheduler/controllers"
+	"github.com/asafron/meetings-scheduler/config"
 )
 
-const DB_URL = "mongodb://127.0.0.1:27017/meeting-scheduler"
 
 func main() {
 	// logging
 	log.SetFormatter(&log.TextFormatter{})
 
+	configWrapper := config.GetConfigWrapper()
+
 	// db
-	dal := initMongo(DB_URL)
+	dal := initMongo(configWrapper.GetCurrent().MongoHost)
 	log.Info("DB connection was established")
 	defer dal.Close()
 
@@ -33,6 +35,7 @@ func main() {
 	//r.Handle("/ws/meetings/getAllMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAllMeetings))).Methods("GET")
 	r.Handle("/ws/meetings/getAvailableMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAvailableMeetings))).Methods("GET")
 	//r.Handle("/ws/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
+
 	// admin
 	r.Handle("/ws/admin/getAllMeetingStatus", requestQueueHandler(http.HandlerFunc(ac.ManagerGetAllMeetings))).Methods("POST")
 
@@ -76,7 +79,7 @@ type VersionResponse struct {
 }
 
 func Version(writer http.ResponseWriter, req *http.Request) {
-	res := VersionResponse{ Version: "2"}
+	res := VersionResponse{ Version: "3"}
 	js, err := json.Marshal(res)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)

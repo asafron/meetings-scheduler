@@ -9,6 +9,7 @@ import (
 	"strings"
 	"github.com/asafron/meetings-scheduler/models"
 	"github.com/bradfitz/slice"
+	"github.com/asafron/meetings-scheduler/config"
 )
 
 type (
@@ -41,7 +42,7 @@ func (ac AdminController) ManagerGetAllMeetings(writer http.ResponseWriter, req 
 
 	log.Info("request object created")
 
-	if (strings.Compare(requestObj.Password, "2901hrsbvnuyh") != 0) {
+	if (strings.Compare(requestObj.Password, config.GetConfigWrapper().GetCurrent().AdminAuth) != 0) {
 		log.Error("Auth failed")
 		helpers.JsonResponse(writer, http.StatusInternalServerError, helpers.ErrorResponse{Message: helpers.RESPONSE_ERROR_MESSAGE_INTERNAL_SERVER_ERROR})
 		return
