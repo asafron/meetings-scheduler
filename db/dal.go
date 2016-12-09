@@ -75,6 +75,7 @@ func (dal *DAL) InsertAvailableMeetingTime(day, month, year, startTime, endTime 
 	meeting.UserPhone = ""
 	meeting.UserSchool = ""
 	meeting.UserIdNumber = ""
+	meeting.UserPreferredSchoolDay = ""
 	meeting.CreatedAt = time.Now().UTC()
 	meeting.UpdatedAt = time.Now().UTC()
 
@@ -97,8 +98,9 @@ func (dal *DAL) GetMeetingByTime(day, month, year, startTime, endTime int) []mod
 	return meetings
 }
 
-func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, name, email, phone, school, idNumber string) error {
+func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, name, email, phone, school, idNumber, schoolDay string) error {
 	allMeetings := dal.GetMeetingByTime(day, month, year, startTime, endTime)
+	log.Info(fmt.Sprintf("found %d meetings", len(allMeetings)))
 	if len(allMeetings) == 0 {
 		return errors.New("no meetings at that time")
 	}
@@ -108,6 +110,7 @@ func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, n
 	meetingAvailable := false
 	for i := 0; i < len(allMeetings); i++ {
 		meeting = allMeetings[i]
+		log.Info(fmt.Sprintf("current check meeting has the UserName %s", meeting.UserName))
 		if len(meeting.UserName) == 0 {
 			meetingAvailable = true
 			break
@@ -121,8 +124,8 @@ func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, n
 	allMeetings = dal.GetAllMeetings()
 	idNumberExists := false
 	for i := 0; i < len(allMeetings); i++ {
-		meeting = allMeetings[i]
-		if meeting.UserIdNumber == idNumber {
+		mtg := allMeetings[i]
+		if mtg.UserIdNumber == idNumber {
 			log.Info(fmt.Sprintf("interation # %d", i))
 			idNumberExists = true
 			break
@@ -132,6 +135,8 @@ func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, n
 		return errors.New("a meeting with the following id number already exists")
 	}
 
+	log.Info(meeting.Id)
+
 	colQuerier := bson.M{"_id" : meeting.Id}
 	change := bson.M{"$set": bson.M{
 		"user_name": name,
@@ -139,6 +144,7 @@ func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, n
 		"user_phone" : phone,
 		"user_school" : school,
 		"user_id_number" : idNumber,
+		"user_preferred_school_day" : schoolDay,
 		"updated_at": time.Now().UTC(),
 	}}
 	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQuerier, change)

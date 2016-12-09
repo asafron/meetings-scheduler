@@ -36,16 +36,17 @@ type AvailableMeetingTimeRequest struct {
 }
 
 type ScheduleMeetingRequest struct {
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Phone     string `json:"phone"`
-	School    string `json:"school"`
-	IdNumber  string `json:"id_number"`
-	Day       int    `json:"day"`
-	Month     int    `json:"month"`
-	Year      int    `json:"year"`
-	StartTime int    `json:"start_time"`
-	EndTime   int    `json:"end_time"`
+	Name               string `json:"name"`
+	Email              string `json:"email"`
+	Phone              string `json:"phone"`
+	School             string `json:"school"`
+	IdNumber           string `json:"id_number"`
+	PreferredSchoolDay string `json:"preferred_school_day"`
+	Day                int    `json:"day"`
+	Month              int    `json:"month"`
+	Year               int    `json:"year"`
+	StartTime          int    `json:"start_time"`
+	EndTime            int    `json:"end_time"`
 }
 
 type MeetingsResponse struct {
@@ -124,14 +125,14 @@ func (mc MeetingsController) ScheduleMeeting(writer http.ResponseWriter, req *ht
 	log.Info("request object created")
 
 	// validation
-	if len(requestObj.Name) == 0 || len(requestObj.Email) == 0 || len(requestObj.Phone) == 0 || len(requestObj.School) == 0 || len(requestObj.IdNumber) == 0 {
+	if len(requestObj.Name) == 0 || len(requestObj.Email) == 0 || len(requestObj.Phone) == 0 || len(requestObj.School) == 0 || len(requestObj.IdNumber) == 0 || len(requestObj.PreferredSchoolDay) == 0 {
 		log.Error("some of the user details are missing")
 		helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: "some of the user details are missing"})
 		return
 	}
 
 	meetingErr := mc.dal.UpdateMeetingDetails(requestObj.Day, requestObj.Month, requestObj.Year, requestObj.StartTime,
-							requestObj.EndTime, requestObj.Name, requestObj.Email, requestObj.Phone, requestObj.School, requestObj.IdNumber)
+							requestObj.EndTime, requestObj.Name, requestObj.Email, requestObj.Phone, requestObj.School, requestObj.IdNumber, requestObj.PreferredSchoolDay)
 	if meetingErr != nil {
 		log.Error(meetingErr)
 		helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: fmt.Sprintf("%s", meetingErr.Error())})
