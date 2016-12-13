@@ -48,7 +48,8 @@ func GetMeetingDateAsString (day, month, year, startTime, endTime int) string {
 	if len(startHour) == 1 {
 		startHour = "0" + startHour
 	}
-	startMin := fmt.Sprintf("%d", int(math.Remainder(float64(startTime), MINUTES_IN_HOUR)))
+
+	startMin := fmt.Sprintf("%d", startTime % MINUTES_IN_HOUR)
 	if len(startMin) == 1 {
 		startMin = "0" + startMin
 	}
@@ -57,7 +58,7 @@ func GetMeetingDateAsString (day, month, year, startTime, endTime int) string {
 	if len(endHour) == 1 {
 		endHour = "0" + endHour
 	}
-	endMin := fmt.Sprintf("%d", int(math.Remainder(float64(endTime), MINUTES_IN_HOUR)))
+	endMin := fmt.Sprintf("%d", endTime % MINUTES_IN_HOUR)
 	if len(endMin) == 1 {
 		endMin = "0" + endMin
 	}
