@@ -38,6 +38,7 @@ func main() {
 
 	// admin
 	r.Handle("/ws/admin/getAllMeetingStatus", requestQueueHandler(http.HandlerFunc(ac.ManagerGetAllMeetings))).Methods("POST")
+	r.Handle("/ws/admin/cancelMeeting", requestQueueHandler(http.HandlerFunc(ac.ManagerCancelMeeting))).Methods("POST")
 
 	// http setup
 	http.Handle("/", &MyServer{r})

@@ -11,6 +11,7 @@ const MINUTES_IN_HOUR = 60
 
 type Meeting struct {
 	Id                     bson.ObjectId `json:"id" bson:"_id"`
+	DisplayId              string        `json:"display_id" bson:"display_id"`
 	Day                    int           `json:"day" bson:"day"`
 	Month                  int           `json:"month" bson:"month"`
 	Year                   int           `json:"year" bson:"year"`

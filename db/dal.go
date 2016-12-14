@@ -8,6 +8,7 @@ import (
 	"time"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/asafron/meetings-scheduler/helpers"
 )
 
 const dbName = "meeting-scheduler"
@@ -19,6 +20,7 @@ const dbFieldMeetingsYear = "year"
 const dbFieldMeetingsStartTime = "start_time"
 const dbFieldMeetingsEndTime = "end_time"
 const dbFieldMeetingsRepresentative = "representative"
+const dbFieldMeetingsDisplayId = "display_id"
 
 type DAL struct {
 	session *mgo.Session
@@ -39,7 +41,7 @@ func (dal *DAL) Initialize() (error) {
 	// Index to ensure no 2 meetings with the same time
 	uniqueIndexes := [][]string {[]string{dbFieldMeetingsDay,
 		dbFieldMeetingsMonth, dbFieldMeetingsYear,
-		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime, dbFieldMeetingsRepresentative}}
+		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime, dbFieldMeetingsRepresentative}, []string{dbFieldMeetingsDisplayId}}
 	for _, element := range uniqueIndexes {
 		index := mgo.Index {
 			Key: element,
@@ -64,6 +66,7 @@ func(dal *DAL) Close() {
 func (dal *DAL) InsertAvailableMeetingTime(day, month, year, startTime, endTime int, representative string) error {
 	meeting := models.Meeting{}
 	meeting.Id = bson.NewObjectId()
+	meeting.DisplayId = helpers.RandStringBytesMaskImprSrc(8)
 	meeting.Day = day
 	meeting.Month = month
 	meeting.Year = year
@@ -187,4 +190,34 @@ func (dal *DAL) GetScheduledMeetings() []models.Meeting {
 		}
 	}
 	return scheduledMeetings
+}
+
+func (dal *DAL) GetMeetingByDisplayId(displayId string) *models.Meeting {
+	meeting := &models.Meeting{}
+	query := bson.M{"display_id": displayId}
+	err := dal.session.DB(dbName).C(dbCollectionMeetings).Find(query).One(&meeting)
+	if err == nil {
+		return meeting
+	}
+	return nil
+}
+
+func (dal *DAL) CancelMeeting(displayId string) error {
+	meeting := dal.GetMeetingByDisplayId(displayId)
+	if meeting == nil {
+		return errors.New("no such meeting")
+	}
+
+	colQuerier := bson.M{"_id" : meeting.Id}
+	change := bson.M{"$set": bson.M{
+		"user_name": "",
+		"user_email" : "",
+		"user_phone" : "",
+		"user_school" : "",
+		"user_id_number" : "",
+		"user_preferred_school_day" : "",
+		"updated_at": time.Now().UTC(),
+	}}
+	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQuerier, change)
+	return err
 }
