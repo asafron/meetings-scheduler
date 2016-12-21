@@ -12,7 +12,9 @@ import (
 )
 
 const dbName = "meeting-scheduler"
+
 const dbCollectionMeetings = "meetings"
+const dbCollectionWaitingList = "waiting-list"
 
 const dbFieldMeetingsDay = "day"
 const dbFieldMeetingsMonth = "month"
@@ -41,7 +43,7 @@ func (dal *DAL) Initialize() (error) {
 	// Index to ensure no 2 meetings with the same time
 	uniqueIndexes := [][]string {[]string{dbFieldMeetingsDay,
 		dbFieldMeetingsMonth, dbFieldMeetingsYear,
-		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime, dbFieldMeetingsRepresentative}, []string{dbFieldMeetingsDisplayId}}
+		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime, dbFieldMeetingsRepresentative}}//, []string{dbFieldMeetingsDisplayId}}
 	for _, element := range uniqueIndexes {
 		index := mgo.Index {
 			Key: element,
@@ -220,4 +222,51 @@ func (dal *DAL) CancelMeeting(displayId string) error {
 	}}
 	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQuerier, change)
 	return err
+}
+
+/* Waiting List */
+
+func (dal *DAL) GetAllWaitingList() []models.Meeting {
+	meetings := []models.Meeting{}
+	err := dal.session.DB(dbName).C(dbCollectionWaitingList).Find(bson.M{}).All(&meetings)
+	if err != nil {
+		return nil
+	}
+	return meetings
+}
+
+func (dal *DAL) InsertToWaitingList(name, email, phone, school, idNumber, schoolDay string) error {
+	//// check if id number already exists
+	//allMeetings := append(dal.GetAllMeetings(), dal.GetAllWaitingList())
+	//idNumberExists := false
+	//for i := 0; i < len(allMeetings); i++ {
+	//	mtg := allMeetings[i]
+	//	if mtg.UserIdNumber == idNumber {
+	//		idNumberExists = true
+	//		break
+	//	}
+	//}
+	//if idNumberExists {
+	//	return errors.New("a meeting with the following id number already exists")
+	//}
+	//
+	//meeting := models.Meeting{}
+	//meeting.Id = bson.NewObjectId()
+	//meeting.DisplayId = helpers.RandStringBytesMaskImprSrc(8)
+	//meeting.UserName = name
+	//meeting.UserEmail = email
+	//meeting.UserPhone = phone
+	//meeting.UserSchool = school
+	//meeting.UserIdNumber = idNumber
+	//meeting.UserPreferredSchoolDay = schoolDay
+	//meeting.CreatedAt = time.Now().UTC()
+	//meeting.UpdatedAt = time.Now().UTC()
+	//
+	//err := dal.session.DB(dbName).C(dbCollectionWaitingList).Insert(meeting)
+	//if (err != nil) {
+	//	log.Error(err)
+	//	return err
+	//}
+
+	return nil
 }

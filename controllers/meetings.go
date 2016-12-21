@@ -49,6 +49,15 @@ type ScheduleMeetingRequest struct {
 	EndTime            int    `json:"end_time"`
 }
 
+type WaitingListRequest struct {
+	Name               string `json:"name"`
+	Email              string `json:"email"`
+	Phone              string `json:"phone"`
+	School             string `json:"school"`
+	IdNumber           string `json:"id_number"`
+	PreferredSchoolDay string `json:"preferred_school_day"`
+}
+
 type MeetingsResponse struct {
 	Meetings []models.Meeting `json:"meetings"`
 }
@@ -223,4 +232,64 @@ func (mc MeetingsController) GetScheduledMeetings(writer http.ResponseWriter, re
 
 	writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(writer).Encode(&meetingResponse)
+}
+
+func (mc MeetingsController) AddToWaitingList(writer http.ResponseWriter, req *http.Request) {
+	//decoder := json.NewDecoder(req.Body)
+	//var requestObj WaitingListRequest
+	//err := decoder.Decode(&requestObj)
+	//if err != nil {
+	//	log.Error(err)
+	//	helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: helpers.RESPONSE_ERROR_MESSAGE_BAD_REQUEST_INPUT_NOT_VALID})
+	//	return
+	//}
+	//
+	//log.Info("request object created")
+	//
+	//// validation
+	//if len(requestObj.Name) == 0 || len(requestObj.Email) == 0 || len(requestObj.Phone) == 0 || len(requestObj.School) == 0 || len(requestObj.IdNumber) == 0 || len(requestObj.PreferredSchoolDay) == 0 {
+	//	log.Error("some of the user details are missing")
+	//	helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: "some of the user details are missing"})
+	//	return
+	//}
+	//
+	//meetingErr := mc.dal.UpdateMeetingDetails(requestObj.Name, requestObj.Email, requestObj.Phone, requestObj.School, requestObj.IdNumber, requestObj.PreferredSchoolDay)
+	//if meetingErr != nil {
+	//	log.Error(meetingErr)
+	//	helpers.JsonResponse(writer, http.StatusBadRequest, helpers.ErrorResponse{Message: fmt.Sprintf("%s", meetingErr.Error())})
+	//	return
+	//}
+	//
+	//configWrapper := config.GetConfigWrapper()
+	//mailErr := mailer.SendMail([]string{requestObj.Email},
+	//	"תיאום ריאיון - כיתת מופת",
+	//	"שלום רב\n\n" +
+	//		"בקשתך לרישום לרשימת ההמתנה לריאיון .\n\n" +
+	//		"להלן פרטי התלמיד כפי שהתקבלו:\n" +
+	//		requestObj.Name + "\n" + requestObj.IdNumber + "\n" + requestObj.Email + "\n" + requestObj.Phone + "\n" + requestObj.School + "\n\n" +
+	//		"מועד הפגישה:\n" +
+	//		models.GetMeetingDateAsString(requestObj.Day, requestObj.Month, requestObj.Year, requestObj.StartTime, requestObj.EndTime) +
+	//		"\n\n" +
+	//		"בברכה,\n" +
+	//		"צוות מופת, בית הספר שרת",
+	//	configWrapper.GetCurrent().EmailServerFrom,
+	//	configWrapper.GetCurrent().EmailServerUsername,
+	//	configWrapper.GetCurrent().EmailServerPassword,
+	//	configWrapper.GetCurrent().EmailServerAddress,
+	//	configWrapper.GetCurrent().EmailServerPort,
+	//	configWrapper.GetCurrent().EmailServerBcc)
+	//if mailErr != nil {
+	//	mailer.SendMail([]string{configWrapper.GetCurrent().EmailServerBcc},
+	//		"Error in MOFET server",
+	//		"Check the following error: " + fmt.Sprint(mailErr),
+	//		configWrapper.GetCurrent().EmailServerFrom,
+	//		configWrapper.GetCurrent().EmailServerUsername,
+	//		configWrapper.GetCurrent().EmailServerPassword,
+	//		configWrapper.GetCurrent().EmailServerAddress,
+	//		configWrapper.GetCurrent().EmailServerPort,
+	//		configWrapper.GetCurrent().EmailServerBcc)
+	//}
+
+	helpers.JsonResponse(writer, http.StatusOK, helpers.MinimalResponse{Success:true})
+	return
 }
