@@ -87,6 +87,8 @@ type EnvConfig struct {
 	EmailServerBcc               string `yaml:"email_server_bcc"`
 	LogPath                      string `yaml:"log_path"`
 	AdminAuth                    string `yaml:"admin_auth"`
+	DashboardLoggedInUrl         string `yaml:"dashboard_logged_in_url"`
+	SessionKey                   string `yaml:"session_key"`
 }
 
 func (configWrapper *ConfigWrapper) GetCurrent() *EnvConfig {

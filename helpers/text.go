@@ -3,6 +3,8 @@ package helpers
 import (
 	"time"
 	"math/rand"
+	"os/exec"
+	"strings"
 )
 
 var src = rand.NewSource(time.Now().UnixNano())
@@ -29,4 +31,14 @@ func RandStringBytesMaskImprSrc(n int) string {
 	}
 
 	return string(b)
+}
+
+func CreateToken() (string, error) {
+	// create confirmation token
+	token, tokenErr := exec.Command("uuidgen").Output()
+	if tokenErr !=nil {
+		return "", tokenErr
+	}
+	tokenStriped :=strings.TrimRight(strings.ToLower(string(token)), "\n")
+	return tokenStriped, nil
 }

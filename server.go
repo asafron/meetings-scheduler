@@ -8,6 +8,9 @@ import (
 	"github.com/asafron/meetings-scheduler/db"
 	"github.com/asafron/meetings-scheduler/controllers"
 	"github.com/asafron/meetings-scheduler/config"
+	"github.com/asafron/meetings-scheduler/auth"
+	"errors"
+	"github.com/asafron/meetings-scheduler/helpers"
 )
 
 
@@ -22,13 +25,15 @@ func main() {
 	log.Info("DB connection was established")
 	defer dal.Close()
 
+	authorizer := auth.NewAuthenticator(dal, config.GetConfigWrapper().GetCurrent().SessionKey)
+
 	// controllers
 	mc := controllers.NewMeetingsController(dal)
 	ac := controllers.NewAdminController(dal)
 
-	// mux and request handling
 	r := mux.NewRouter()
 	r.Handle("/ws/version", requestQueueHandler(http.HandlerFunc(Version))).Methods("GET")
+
 	// client
 	r.Handle("/ws/meetings/addAvailableTime", requestQueueHandler(http.HandlerFunc(mc.AddAvailableTime))).Methods("POST")
 	r.Handle("/ws/meetings/schedule", requestQueueHandler(http.HandlerFunc(mc.ScheduleMeeting))).Methods("POST")
@@ -37,6 +42,7 @@ func main() {
 	//r.Handle("/ws/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
 
 	// admin
+	r.Handle("/applications", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(ac.ManagerGetAllMeetings)))).Methods("GET")
 	r.Handle("/ws/admin/getAllMeetingStatus", requestQueueHandler(http.HandlerFunc(ac.ManagerGetAllMeetings))).Methods("POST")
 	r.Handle("/ws/admin/cancelMeeting", requestQueueHandler(http.HandlerFunc(ac.ManagerCancelMeeting))).Methods("POST")
 
@@ -97,4 +103,25 @@ func initMongo(dbUrl string) *db.DAL{
 		panic(err)
 	}
 	return dal
+}
+
+func RecoverWrap(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		var err error
+		defer func() {
+			r := recover()
+			if r != nil {
+				switch t := r.(type) {
+				case string:
+					err = errors.New(t)
+				case error:
+					err = t
+				default:
+					err = helpers.GeneralErrorInternal
+				}
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}()
+		h.ServeHTTP(w, req)
+	})
 }

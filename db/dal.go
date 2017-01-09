@@ -13,8 +13,8 @@ import (
 
 const dbName = "meeting-scheduler"
 
+const dbCollectionUsers = "users"
 const dbCollectionMeetings = "meetings"
-const dbCollectionWaitingList = "waiting-list"
 
 const dbFieldMeetingsDay = "day"
 const dbFieldMeetingsMonth = "month"
@@ -22,7 +22,8 @@ const dbFieldMeetingsYear = "year"
 const dbFieldMeetingsStartTime = "start_time"
 const dbFieldMeetingsEndTime = "end_time"
 const dbFieldMeetingsRepresentative = "representative"
-const dbFieldMeetingsDisplayId = "display_id"
+
+const dbFieldUsersEmail = "email"
 
 type DAL struct {
 	session *mgo.Session
@@ -37,13 +38,11 @@ func NewDatabaseAccessor(url string) *DAL {
 }
 
 func (dal *DAL) Initialize() (error) {
-	// Applications indices
-	meetingsCollection := dal.session.DB(dbName).C(dbCollectionMeetings)
 
-	// Index to ensure no 2 meetings with the same time
+	meetingsCollection := dal.session.DB(dbName).C(dbCollectionMeetings)
 	uniqueIndexes := [][]string {[]string{dbFieldMeetingsDay,
 		dbFieldMeetingsMonth, dbFieldMeetingsYear,
-		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime, dbFieldMeetingsRepresentative}}//, []string{dbFieldMeetingsDisplayId}}
+		dbFieldMeetingsStartTime, dbFieldMeetingsEndTime, dbFieldMeetingsRepresentative}}
 	for _, element := range uniqueIndexes {
 		index := mgo.Index {
 			Key: element,
@@ -53,6 +52,22 @@ func (dal *DAL) Initialize() (error) {
 			Sparse: false,
 		}
 		err := meetingsCollection.EnsureIndex(index)
+		if err != nil {
+			return err
+		}
+	}
+
+	usersCollection := dal.session.DB(dbName).C(dbCollectionUsers)
+	uniqueIndexes = [][]string {[]string{dbFieldUsersEmail}}
+	for _, element := range uniqueIndexes {
+		index := mgo.Index {
+			Key: element,
+			Unique: true,
+			DropDups: false,
+			Background: false,
+			Sparse: false,
+		}
+		err := usersCollection.EnsureIndex(index)
 		if err != nil {
 			return err
 		}
@@ -142,7 +157,7 @@ func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, n
 
 	log.Info(meeting.Id)
 
-	colQuerier := bson.M{"_id" : meeting.Id}
+	colQueried := bson.M{"_id" : meeting.Id}
 	change := bson.M{"$set": bson.M{
 		"user_name": name,
 		"user_email" : email,
@@ -152,7 +167,7 @@ func (dal *DAL) UpdateMeetingDetails(day, month, year, startTime, endTime int, n
 		"user_preferred_school_day" : schoolDay,
 		"updated_at": time.Now().UTC(),
 	}}
-	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQuerier, change)
+	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQueried, change)
 	if err != nil {
 		return err
 	}
@@ -210,7 +225,7 @@ func (dal *DAL) CancelMeeting(displayId string) error {
 		return errors.New("no such meeting")
 	}
 
-	colQuerier := bson.M{"_id" : meeting.Id}
+	colQueried := bson.M{"_id" : meeting.Id}
 	change := bson.M{"$set": bson.M{
 		"user_name": "",
 		"user_email" : "",
@@ -220,53 +235,105 @@ func (dal *DAL) CancelMeeting(displayId string) error {
 		"user_preferred_school_day" : "",
 		"updated_at": time.Now().UTC(),
 	}}
-	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQuerier, change)
+	err := dal.session.DB(dbName).C(dbCollectionMeetings).Update(colQueried, change)
 	return err
 }
 
-/* Waiting List */
+/* Users */
 
-func (dal *DAL) GetAllWaitingList() []models.Meeting {
-	meetings := []models.Meeting{}
-	err := dal.session.DB(dbName).C(dbCollectionWaitingList).Find(bson.M{}).All(&meetings)
-	if err != nil {
-		return nil
+func (dal *DAL) FindActiveUserByEmail(email string)  (*models.User, error) {
+	user := models.User{}
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Find(bson.M{"email": email, "status" : models.USER_CONFIRMED}).One(&user)
+	if (err != nil) {
+		return &user, helpers.AuthenticationErrorLoginUserNotExists
 	}
-	return meetings
+	return &user, nil
 }
 
-func (dal *DAL) InsertToWaitingList(name, email, phone, school, idNumber, schoolDay string) error {
-	//// check if id number already exists
-	//allMeetings := append(dal.GetAllMeetings(), dal.GetAllWaitingList())
-	//idNumberExists := false
-	//for i := 0; i < len(allMeetings); i++ {
-	//	mtg := allMeetings[i]
-	//	if mtg.UserIdNumber == idNumber {
-	//		idNumberExists = true
-	//		break
-	//	}
-	//}
-	//if idNumberExists {
-	//	return errors.New("a meeting with the following id number already exists")
-	//}
-	//
-	//meeting := models.Meeting{}
-	//meeting.Id = bson.NewObjectId()
-	//meeting.DisplayId = helpers.RandStringBytesMaskImprSrc(8)
-	//meeting.UserName = name
-	//meeting.UserEmail = email
-	//meeting.UserPhone = phone
-	//meeting.UserSchool = school
-	//meeting.UserIdNumber = idNumber
-	//meeting.UserPreferredSchoolDay = schoolDay
-	//meeting.CreatedAt = time.Now().UTC()
-	//meeting.UpdatedAt = time.Now().UTC()
-	//
-	//err := dal.session.DB(dbName).C(dbCollectionWaitingList).Insert(meeting)
-	//if (err != nil) {
-	//	log.Error(err)
-	//	return err
-	//}
+func (dal *DAL) FindAnyUserByEmail(email string)  (*models.User, error) {
+	user := models.User{}
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Find(bson.M{"email": email}).One(&user)
+	if (err != nil) {
+		return &user, helpers.AuthenticationErrorLoginUserNotExists
+	}
+	return &user, nil
+}
 
+func (dal *DAL) InsertUser(email string,hash []byte, firstName string , lastName string, company string, website string, confirmationToken string) error {
+	user := models.User{
+		DisplayId: helpers.RandStringBytesMaskImprSrc(8),
+		Email: email,
+		FirstName: firstName,
+		LastName: lastName,
+		Hash: hash,
+		ConfirmationToken: confirmationToken,
+		ConfirmationTokenStatus: models.CONFIRMATION_TOKEN_VALID,
+		Confirmed: false,
+		Status: models.USER_NOT_CONFIRMED}
+
+	err := dal.session.DB("push_apps_admin").C("users").Insert(user)
+	if (err != nil) {
+		return err
+	}
+	return  nil
+}
+
+func (dal *DAL) FindUserByConfirmationToken(confirmationToken string, email string)  (*models.User, error) {
+	user := models.User{}
+	err := dal.session.DB("push_apps_admin").C("users").Find(bson.M{"confirmation_token": confirmationToken, "confirmation_token_status" : models.CONFIRMATION_TOKEN_VALID, "email" : email }).One(&user)
+	if (err != nil) {
+		return &user, helpers.AuthenticationErrorLoginUserNotExists
+	}
+	return &user, nil
+}
+
+func (dal *DAL) FindUserByRecoveryToken(recoveryToken string, email string)  (*models.User, error) {
+	user := models.User{}
+	err := dal.session.DB("push_apps_admin").C("users").Find(bson.M{"email" : email, "recovery_token": recoveryToken, "recovery_token_status" : models.RECOVER_TOKEN_VALID, "recovery_token_expiry" : bson.M{ "$gt" : time.Now().UTC()} }).One(&user)
+	if (err != nil) {
+		return &user, helpers.AuthenticationErrorLoginUserNotExists
+	}
+	return &user, nil
+}
+
+func (dal *DAL) UpdateUserConfirmation(userId bson.ObjectId, userStatus models.UserStatusType, confirmationTokenStatus models.ConfirmationTokenStatusType, confirmed bool) (error) {
+	colQueried := bson.M{"_id" : userId}
+	change := bson.M{"$set": bson.M{
+		"confirmation_token_status": confirmationTokenStatus,
+		"status" : userStatus,
+		"updated_at": time.Now().UTC(),
+		"Confirmed" : confirmed}}
+	err := dal.session.DB("push_apps_admin").C("users").Update(colQueried, change)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (dal *DAL) UpdateUserPassword(userId bson.ObjectId, hash []byte, recoveryTokenStatus models.RecoverTokenStatusType, recoveryTokenExpiry time.Time) (error) {
+	colQueried := bson.M{"_id" : userId, "recovery_token_expiry" : bson.M{ "$gt" : time.Now().UTC()}, "recovery_token_status" : models.RECOVER_TOKEN_VALID}
+	change := bson.M{"$set": bson.M{
+		"recovery_token_status": recoveryTokenStatus,
+		"recovery_token_expiry" : recoveryTokenExpiry,
+		"updated_at": time.Now().UTC(),
+		"hash" : hash}}
+	err := dal.session.DB("push_apps_admin").C("users").Update(colQueried, change)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (dal *DAL) UpdateUserRecovery(userId bson.ObjectId, recoveryToken string, recoveryTokenStatus models.RecoverTokenStatusType, recoveryTokenExpiry time.Time) error {
+	colQueried := bson.M{"_id" : userId}
+	change := bson.M{"$set": bson.M{
+		"updated_at": time.Now().UTC(),
+		"recovery_token_status": recoveryTokenStatus,
+		"recovery_token_expiry" : recoveryTokenExpiry,
+		"recovery_token": recoveryToken }}
+	err := dal.session.DB("push_apps_admin").C("users").Update(colQueried, change)
+	if err != nil {
+		return err
+	}
 	return nil
 }
