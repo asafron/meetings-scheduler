@@ -7,8 +7,8 @@ import (
 
 type GeneralResponse struct {
 	Success bool                   `json:"success"`
-	Message string                 `json:"message"`
-	Data    map[string]interface{} `json:"data"`
+	Message string                 `json:"message,omitempty"`
+	Data    map[string]interface{} `json:"data,omitempty"`
 }
 
 func JsonResponse(writer http.ResponseWriter, statusCode int, responseObject interface{}) {
