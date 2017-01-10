@@ -11,7 +11,8 @@ const (
 )
 
 type MinimalResponse struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
 type ErrorResponse struct {

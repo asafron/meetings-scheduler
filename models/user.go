@@ -14,14 +14,13 @@ type User struct {
 	Hash                    []byte                      `json:"-" bson:"hash"`
 	ConfirmationToken       string                      `json:"-" bson:"confirmation_token"`
 	ConfirmationTokenStatus ConfirmationTokenStatusType `json:"-" bson:"confirmation_token_status"`
-
 	Confirmed               bool                        `json:"-" bson:"confirmed"`
 	Status                  UserStatusType              `json:"-" bson:"status"`
-
 	RecoverToken		string                      `json:"-" bson:"recovery_token"`
 	RecoverTokenExpiry      time.Time                   `json:"-" bson:"recovery_token_expiry"`
 	RecoverTokenStatus	RecoverTokenStatusType      `json:"-" bson:"recovery_token_status"`
-
+	CreatedAt               time.Time                   `json:"created_at" bson:"created_at"`
+	UpdatedAt               time.Time                   `json:"updated_at" bson:"updated_at"`
 }
 
 type UserStatusType string

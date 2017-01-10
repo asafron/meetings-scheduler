@@ -26,7 +26,7 @@ func NewAuthenticator(dal *db.DAL, cookieKey string) *Authenticator {
 }
 
 
-func (a *Authenticator) Register(role string, email string , password string, firstName string , lastName string, company string, website string) (string, error) {
+func (a *Authenticator) Register(email string , password string, firstName string , lastName string) (string, error) {
 	if email == "" {
 		return "", helpers.AuthenticationErrorRegisterNoEmail
 	}
@@ -46,7 +46,7 @@ func (a *Authenticator) Register(role string, email string , password string, fi
 		return "", tokenErr
 	}
 	confirmationToken := strings.TrimRight(strings.ToLower(string(token)), "\n")
-	err = a.dal.InsertUser(email, hash, firstName, lastName, company, website, confirmationToken)
+	err = a.dal.InsertUser(email, hash, firstName, lastName, confirmationToken)
 	if err != nil {
 		return "", helpers.AuthenticationErrorRegisterUserCreationFailed
 	}
@@ -169,7 +169,7 @@ func (auth *Authenticator) AuthMiddleware(h http.Handler) http.Handler {
 		var err error=nil
 		user, err = auth.Authorize(w, r)
 		if err != nil {
-			http.Redirect(w, r, config.GetConfigWrapper().GetCurrent().DashboardLoggedInUrl, http.StatusSeeOther)
+			http.Redirect(w, r, config.GetConfigWrapper().GetCurrent().DashboardBaseUrl, http.StatusSeeOther)
 			return
 		}
 		helpers.SetCurrentUser(r,*user)

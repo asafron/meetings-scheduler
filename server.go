@@ -29,7 +29,7 @@ func main() {
 
 	// controllers
 	mc := controllers.NewMeetingsController(dal)
-	ac := controllers.NewAdminController(dal)
+	uc := controllers.NewUserController(dal, authorizer)
 
 	r := mux.NewRouter()
 	r.Handle("/ws/version", requestQueueHandler(http.HandlerFunc(Version))).Methods("GET")
@@ -41,10 +41,16 @@ func main() {
 	r.Handle("/ws/meetings/getAvailableMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAvailableMeetings))).Methods("GET")
 	//r.Handle("/ws/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
 
-	// admin
-	r.Handle("/applications", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(ac.ManagerGetAllMeetings)))).Methods("GET")
-	r.Handle("/ws/admin/getAllMeetingStatus", requestQueueHandler(http.HandlerFunc(ac.ManagerGetAllMeetings))).Methods("POST")
-	r.Handle("/ws/admin/cancelMeeting", requestQueueHandler(http.HandlerFunc(ac.ManagerCancelMeeting))).Methods("POST")
+	// users
+	r.Handle("/users", RecoverWrap(http.HandlerFunc(uc.CreateUser))).Methods("POST")
+	r.Handle("/users", http.HandlerFunc(cors)).Methods("OPTIONS")
+	r.Handle("/users/confirm", RecoverWrap(http.HandlerFunc(uc.ConfirmUser))).Methods("GET")
+	r.Handle("/users/signIn", RecoverWrap(http.HandlerFunc(uc.Login))).Methods("POST")
+	r.Handle("/users/signOut", RecoverWrap(authorizer.AuthMiddleware(authorizer.AuthMiddleware(http.HandlerFunc(uc.Logout))))).Methods("DELETE")
+	r.Handle("/users/session/check", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(uc.CheckSession)))).Methods("GET")
+	r.Handle("/users/password", RecoverWrap(http.HandlerFunc(uc.ForgotPassword))).Methods("POST")
+	r.Handle("/users/recover", RecoverWrap(http.HandlerFunc(uc.ValidateRecoverLink))).Methods("GET")
+	r.Handle("/users/password/recover", RecoverWrap(http.HandlerFunc(uc.RecoverUser))).Methods("POST")
 
 	// http setup
 	http.Handle("/", &MyServer{r})
@@ -73,6 +79,19 @@ func (s *MyServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	// Lets Gorilla work
 	s.r.ServeHTTP(rw, req)
+}
+
+func cors(writer http.ResponseWriter, req *http.Request) {
+	if origin := req.Header.Get("Origin"); origin != "" {
+		writer.Header().Set("Access-Control-Allow-Origin", origin)
+		writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		writer.Header().Set("Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	}
+	if req.Method == "OPTIONS" {
+		return
+	}
 }
 
 func requestQueueHandler(fn http.Handler) http.HandlerFunc {

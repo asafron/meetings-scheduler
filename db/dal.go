@@ -259,8 +259,9 @@ func (dal *DAL) FindAnyUserByEmail(email string)  (*models.User, error) {
 	return &user, nil
 }
 
-func (dal *DAL) InsertUser(email string,hash []byte, firstName string , lastName string, company string, website string, confirmationToken string) error {
+func (dal *DAL) InsertUser(email string,hash []byte, firstName string , lastName string, confirmationToken string) error {
 	user := models.User{
+		Id: bson.NewObjectId(),
 		DisplayId: helpers.RandStringBytesMaskImprSrc(8),
 		Email: email,
 		FirstName: firstName,
@@ -269,10 +270,13 @@ func (dal *DAL) InsertUser(email string,hash []byte, firstName string , lastName
 		ConfirmationToken: confirmationToken,
 		ConfirmationTokenStatus: models.CONFIRMATION_TOKEN_VALID,
 		Confirmed: false,
-		Status: models.USER_NOT_CONFIRMED}
+		Status: models.USER_NOT_CONFIRMED,
+		CreatedAt:time.Now().UTC(),
+		UpdatedAt:time.Now().UTC()}
 
-	err := dal.session.DB("push_apps_admin").C("users").Insert(user)
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Insert(user)
 	if (err != nil) {
+		log.Warn(err)
 		return err
 	}
 	return  nil
@@ -280,7 +284,7 @@ func (dal *DAL) InsertUser(email string,hash []byte, firstName string , lastName
 
 func (dal *DAL) FindUserByConfirmationToken(confirmationToken string, email string)  (*models.User, error) {
 	user := models.User{}
-	err := dal.session.DB("push_apps_admin").C("users").Find(bson.M{"confirmation_token": confirmationToken, "confirmation_token_status" : models.CONFIRMATION_TOKEN_VALID, "email" : email }).One(&user)
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Find(bson.M{"confirmation_token": confirmationToken, "confirmation_token_status" : models.CONFIRMATION_TOKEN_VALID, "email" : email }).One(&user)
 	if (err != nil) {
 		return &user, helpers.AuthenticationErrorLoginUserNotExists
 	}
@@ -289,7 +293,7 @@ func (dal *DAL) FindUserByConfirmationToken(confirmationToken string, email stri
 
 func (dal *DAL) FindUserByRecoveryToken(recoveryToken string, email string)  (*models.User, error) {
 	user := models.User{}
-	err := dal.session.DB("push_apps_admin").C("users").Find(bson.M{"email" : email, "recovery_token": recoveryToken, "recovery_token_status" : models.RECOVER_TOKEN_VALID, "recovery_token_expiry" : bson.M{ "$gt" : time.Now().UTC()} }).One(&user)
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Find(bson.M{"email" : email, "recovery_token": recoveryToken, "recovery_token_status" : models.RECOVER_TOKEN_VALID, "recovery_token_expiry" : bson.M{ "$gt" : time.Now().UTC()} }).One(&user)
 	if (err != nil) {
 		return &user, helpers.AuthenticationErrorLoginUserNotExists
 	}
@@ -302,8 +306,8 @@ func (dal *DAL) UpdateUserConfirmation(userId bson.ObjectId, userStatus models.U
 		"confirmation_token_status": confirmationTokenStatus,
 		"status" : userStatus,
 		"updated_at": time.Now().UTC(),
-		"Confirmed" : confirmed}}
-	err := dal.session.DB("push_apps_admin").C("users").Update(colQueried, change)
+		"confirmed" : confirmed}}
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Update(colQueried, change)
 	if err != nil {
 		return err
 	}
@@ -317,7 +321,7 @@ func (dal *DAL) UpdateUserPassword(userId bson.ObjectId, hash []byte, recoveryTo
 		"recovery_token_expiry" : recoveryTokenExpiry,
 		"updated_at": time.Now().UTC(),
 		"hash" : hash}}
-	err := dal.session.DB("push_apps_admin").C("users").Update(colQueried, change)
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Update(colQueried, change)
 	if err != nil {
 		return err
 	}
@@ -331,7 +335,7 @@ func (dal *DAL) UpdateUserRecovery(userId bson.ObjectId, recoveryToken string, r
 		"recovery_token_status": recoveryTokenStatus,
 		"recovery_token_expiry" : recoveryTokenExpiry,
 		"recovery_token": recoveryToken }}
-	err := dal.session.DB("push_apps_admin").C("users").Update(colQueried, change)
+	err := dal.session.DB(dbName).C(dbCollectionUsers).Update(colQueried, change)
 	if err != nil {
 		return err
 	}
