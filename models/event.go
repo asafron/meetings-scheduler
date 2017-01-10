@@ -10,4 +10,5 @@ type Event struct {
 	AdminUser *User         `json:"admin_user" bson:"admin_user"`
 	Slots     []Slot        `json:"slots" bson:"slots"`
 	Name      string        `json:"name" bson:"name"`
+	Meetings  []Meeting     `json:"meetings" bson:"meetings"`
 }

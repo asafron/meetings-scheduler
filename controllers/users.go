@@ -59,7 +59,7 @@ func (uc UserController) CreateUser(writer http.ResponseWriter, req *http.Reques
 	if createRequest.Email == "" || createRequest.Password == "" || createRequest.PasswordConfirmation == "" {
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "Email, password or password confirmation are missing"}
+		errorResponse := helpers.GeneralResponse{Message: "Email, password or password confirmation are missing"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}
@@ -67,7 +67,7 @@ func (uc UserController) CreateUser(writer http.ResponseWriter, req *http.Reques
 	if createRequest.Password != createRequest.PasswordConfirmation || len(createRequest.Password) < 6 {
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "Password is to short or doesn't match the password confirmation"}
+		errorResponse := helpers.GeneralResponse{Message: "Password is to short or doesn't match the password confirmation"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}
@@ -78,7 +78,7 @@ func (uc UserController) CreateUser(writer http.ResponseWriter, req *http.Reques
 	if err == nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "A user with this email already exists, please try another email"}
+		errorResponse := helpers.GeneralResponse{Message: "A user with this email already exists, please try another email"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	} else if err != helpers.AuthenticationErrorLoginUserNotExists {
@@ -109,13 +109,13 @@ func (uc UserController) CreateUser(writer http.ResponseWriter, req *http.Reques
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "The user has been registered but the confirmation email sending has failed , please try again or contect the system administrator with this message"}
+		errorResponse := helpers.GeneralResponse{Message: "The user has been registered but the confirmation email sending has failed , please try again or contect the system administrator with this message"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}
 	message := "A confirmation email was sent to " + email + ". Please check your mail and follow the instructions to finish the registration process."
 	writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-	json.NewEncoder(writer).Encode(helpers.MinimalResponse{Success: true, Message: message})
+	json.NewEncoder(writer).Encode(helpers.GeneralResponse{Success: true, Message: message})
 	return
 }
 
@@ -131,7 +131,7 @@ func (uc UserController) Login(writer http.ResponseWriter, req *http.Request) {
 	if loginRequest.Email == "" || loginRequest.Password == "" {
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "Email or password are missing"}
+		errorResponse := helpers.GeneralResponse{Message: "Email or password are missing"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}
@@ -146,12 +146,12 @@ func (uc UserController) Login(writer http.ResponseWriter, req *http.Request) {
 			return
 		case helpers.AuthenticationErrorLoginWrongEmailPassword, helpers.AuthenticationErrorLoginUserNotExists:
 			writer.WriteHeader(http.StatusBadRequest)
-			errorResponse := helpers.MinimalResponse{Message: err.Error()}
+			errorResponse := helpers.GeneralResponse{Message: err.Error()}
 			json.NewEncoder(writer).Encode(errorResponse)
 			return
 		default:
 			writer.WriteHeader(http.StatusInternalServerError)
-			errorResponse := helpers.MinimalResponse{Message: helpers.GeneralErrorInternal.Error()}
+			errorResponse := helpers.GeneralResponse{Message: helpers.GeneralErrorInternal.Error()}
 			json.NewEncoder(writer).Encode(errorResponse)
 			return
 		}
@@ -167,7 +167,7 @@ func (uc UserController) Logout(writer http.ResponseWriter, req *http.Request) {
 		//shouldn't happen
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: err.Error()}
+		errorResponse := helpers.GeneralResponse{Message: err.Error()}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}
@@ -231,13 +231,13 @@ func (uc UserController) ForgotPassword(writer http.ResponseWriter, req *http.Re
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "We couldn't send your password recovery email, please try again or contect the system administrator with this message"}
+		errorResponse := helpers.GeneralResponse{Message: "We couldn't send your password recovery email, please try again or contect the system administrator with this message"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}
 	writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 	message := "A password recovery email was sent to " + email + ". Please check your mail and follow the instructions to set your password."
-	response := helpers.MinimalResponse{Message: message, Success: true}
+	response := helpers.GeneralResponse{Message: message, Success: true}
 	json.NewEncoder(writer).Encode(response)
 	return
 }
@@ -273,7 +273,7 @@ func (uc UserController) RecoverUser(writer http.ResponseWriter, req *http.Reque
 	if recoverPasswordRequest.Email == "" || recoverPasswordRequest.Password == "" || recoverPasswordRequest.PasswordConfirmation == "" {
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "Email, password or password confirmation are missing"}
+		errorResponse := helpers.GeneralResponse{Message: "Email, password or password confirmation are missing"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}
@@ -281,7 +281,7 @@ func (uc UserController) RecoverUser(writer http.ResponseWriter, req *http.Reque
 	if recoverPasswordRequest.Password != recoverPasswordRequest.PasswordConfirmation || len(recoverPasswordRequest.Password) < 6 {
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		errorResponse := helpers.MinimalResponse{Message: "Password is to short or doesn't match the password confirmation"}
+		errorResponse := helpers.GeneralResponse{Message: "Password is to short or doesn't match the password confirmation"}
 		json.NewEncoder(writer).Encode(errorResponse)
 		return
 	}

@@ -28,18 +28,11 @@ func main() {
 	authorizer := auth.NewAuthenticator(dal, config.GetConfigWrapper().GetCurrent().SessionKey)
 
 	// controllers
-	mc := controllers.NewMeetingsController(dal)
+	ec := controllers.NewEventsController(dal)
 	uc := controllers.NewUserController(dal, authorizer)
 
 	r := mux.NewRouter()
 	r.Handle("/ws/version", requestQueueHandler(http.HandlerFunc(Version))).Methods("GET")
-
-	// client
-	r.Handle("/ws/meetings/addAvailableTime", requestQueueHandler(http.HandlerFunc(mc.AddAvailableTime))).Methods("POST")
-	r.Handle("/ws/meetings/schedule", requestQueueHandler(http.HandlerFunc(mc.ScheduleMeeting))).Methods("POST")
-	//r.Handle("/ws/meetings/getAllMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAllMeetings))).Methods("GET")
-	r.Handle("/ws/meetings/getAvailableMeetings", requestQueueHandler(http.HandlerFunc(mc.GetAvailableMeetings))).Methods("GET")
-	//r.Handle("/ws/meetings/getScheduledMeetings", requestQueueHandler(http.HandlerFunc(mc.GetScheduledMeetings))).Methods("GET")
 
 	// users
 	r.Handle("/users", RecoverWrap(http.HandlerFunc(uc.CreateUser))).Methods("POST")
@@ -51,6 +44,9 @@ func main() {
 	r.Handle("/users/password", RecoverWrap(http.HandlerFunc(uc.ForgotPassword))).Methods("POST")
 	r.Handle("/users/recover", RecoverWrap(http.HandlerFunc(uc.ValidateRecoverLink))).Methods("GET")
 	r.Handle("/users/password/recover", RecoverWrap(http.HandlerFunc(uc.RecoverUser))).Methods("POST")
+
+	// events
+	r.Handle("/events", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(ec.GetEventsForUser)))).Methods("GET")
 
 	// http setup
 	http.Handle("/", &MyServer{r})
