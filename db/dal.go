@@ -181,9 +181,73 @@ func (dal *DAL) UpdateUserRecovery(userId bson.ObjectId, recoveryToken string, r
 
 func (dal *DAL) GetEventsForUser(displayId string) *[]models.Event {
 	events := []models.Event{}
-	err := dal.session.DB(dbName).C(dbCollectionEvents).Find(bson.M{"display_id": displayId}).All(&events)
+	err := dal.session.DB(dbName).C(dbCollectionEvents).Find(bson.M{"admin_user": displayId}).All(&events)
 	if err != nil {
 		log.Info(err)
 	}
 	return &events
+}
+
+func (dal *DAL) InsertEvent(name string, adminUser string, slots []models.Slot, meetings []models.Meeting) error {
+	event := models.Event{
+		Id: bson.NewObjectId(),
+		DisplayId: helpers.RandStringBytesMaskImprSrc(8),
+		Name: name,
+		AdminUser: adminUser,
+		Slots: slots,
+		Meetings: meetings,
+		CreatedAt:time.Now().UTC(),
+		UpdatedAt:time.Now().UTC()}
+
+	err := dal.session.DB(dbName).C(dbCollectionEvents).Insert(event)
+	if (err != nil) {
+		log.Fatal(err)
+		return err
+	}
+	return  nil
+}
+
+func (dal *DAL) UpdateEvent(displayId string, name string, adminUser string, slots []models.Slot, meetings []models.Meeting) error {
+	slotsToDb := []models.Slot{}
+	for _, element := range slots {
+		if len(element.Id) == 0 {
+			element.Id = bson.NewObjectId()
+			element.DisplayId = helpers.RandStringBytesMaskImprSrc(8)
+		}
+		slotsToDb = append(slotsToDb, element)
+	}
+
+	colQueried := bson.M{"display_id" : displayId}
+	change := bson.M{"$set": bson.M{
+		"name": name,
+		"admin_user" : adminUser,
+		"slots" : slotsToDb,
+		"meetings" : meetings,
+		"updated_at": time.Now().UTC()}}
+	err := dal.session.DB(dbName).C(dbCollectionEvents).Update(colQueried, change)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func (dal *DAL) RemoveEvent(displayId string) error {
+	colQueried := bson.M{"display_id" : displayId}
+	err := dal.session.DB(dbName).C(dbCollectionEvents).Remove(colQueried)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func (dal *DAL) GetEventByDisplayId(displayId string) (*models.Event, error) {
+	event := models.Event{}
+	err := dal.session.DB(dbName).C(dbCollectionEvents).Find(bson.M{"display_id": displayId}).One(&event)
+	if err != nil {
+		log.Info(err)
+		return nil, err
+	}
+	return &event, nil
 }

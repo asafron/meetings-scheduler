@@ -30,13 +30,14 @@ func main() {
 	// controllers
 	ec := controllers.NewEventsController(dal)
 	uc := controllers.NewUserController(dal, authorizer)
+	sc := controllers.NewSlotsController(dal)
 
 	r := mux.NewRouter()
 	r.Handle("/ws/version", requestQueueHandler(http.HandlerFunc(Version))).Methods("GET")
 
 	// users
-	r.Handle("/users", RecoverWrap(http.HandlerFunc(uc.CreateUser))).Methods("POST")
 	r.Handle("/users", http.HandlerFunc(cors)).Methods("OPTIONS")
+	r.Handle("/users", RecoverWrap(http.HandlerFunc(uc.CreateUser))).Methods("POST")
 	r.Handle("/users/confirm", RecoverWrap(http.HandlerFunc(uc.ConfirmUser))).Methods("GET")
 	r.Handle("/users/signIn", RecoverWrap(http.HandlerFunc(uc.Login))).Methods("POST")
 	r.Handle("/users/signOut", RecoverWrap(authorizer.AuthMiddleware(authorizer.AuthMiddleware(http.HandlerFunc(uc.Logout))))).Methods("DELETE")
@@ -47,6 +48,11 @@ func main() {
 
 	// events
 	r.Handle("/events", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(ec.GetEventsForUser)))).Methods("GET")
+	r.Handle("/events", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(ec.AddEventForUser)))).Methods("POST")
+	r.Handle("/events", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(ec.RemoveEvent)))).Methods("DELETE")
+
+	// slots
+	r.Handle("/slots", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(sc.AddSlotsToEvent)))).Methods("POST")
 
 	// http setup
 	http.Handle("/", &MyServer{r})
