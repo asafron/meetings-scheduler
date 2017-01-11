@@ -251,3 +251,33 @@ func (dal *DAL) GetEventByDisplayId(displayId string) (*models.Event, error) {
 	}
 	return &event, nil
 }
+
+func (dal *DAL) RemoveSlotFromEvent(eventDisplayId string, displayId string) error {
+	event, err := dal.GetEventByDisplayId(eventDisplayId)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	indexToDelete := -1
+	for index, element := range event.Slots {
+		if element.DisplayId == displayId {
+			indexToDelete = index
+			break
+		}
+	}
+
+	if indexToDelete == -1 {
+		log.Fatal(helpers.SlotsErrorNotFound)
+		return helpers.SlotsErrorNotFound
+	}
+
+	event.Slots = append(event.Slots[:indexToDelete], event.Slots[indexToDelete+1:]...)
+
+	err = dal.UpdateEvent(event.DisplayId, event.Name, event.AdminUser, event.Slots, event.Meetings)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return nil
+}

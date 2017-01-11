@@ -53,6 +53,7 @@ func main() {
 
 	// slots
 	r.Handle("/slots", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(sc.AddSlotsToEvent)))).Methods("POST")
+	r.Handle("/slots", RecoverWrap(authorizer.AuthMiddleware(http.HandlerFunc(sc.RemoveSlotFromEvent)))).Methods("DELETE")
 
 	// http setup
 	http.Handle("/", &MyServer{r})
@@ -107,6 +108,7 @@ type VersionResponse struct {
 }
 
 func Version(writer http.ResponseWriter, req *http.Request) {
+	log.Info(req.Header.Get("Origin"))
 	res := VersionResponse{ Version: "4"}
 	js, err := json.Marshal(res)
 	if err != nil {

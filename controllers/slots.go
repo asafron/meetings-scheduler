@@ -28,6 +28,11 @@ type SlotsRequest struct {
 	Interval  uint   `json:"interval"`
 }
 
+type RemoveSlotFromEventRequest struct {
+	EventDisplayId string `json:"event_display_id"`
+	DisplayId      string `json:"display_id"`
+}
+
 func NewSlotsController(dal *db.DAL) *SlotsController {
 	return &SlotsController{dal : dal}
 }
@@ -63,6 +68,31 @@ func (sc SlotsController) AddSlotsToEvent(writer http.ResponseWriter, req *http.
 	}
 
 	err = sc.dal.UpdateEvent(event.DisplayId, event.Name, event.AdminUser, slots, event.Meetings)
+	if err != nil {
+		log.Fatal(err)
+		helpers.JsonResponse(writer, http.StatusOK, &helpers.GeneralResponse{
+			Success: false,
+			Message: helpers.GeneralErrorInternal.Error(),
+		})
+		return
+	}
+
+	helpers.JsonResponse(writer, http.StatusOK, &helpers.GeneralResponse{
+		Success: true,
+	})
+}
+
+func (sc SlotsController) RemoveSlotFromEvent(writer http.ResponseWriter, req *http.Request) {
+	var request RemoveSlotFromEventRequest
+	decoder := json.NewDecoder(req.Body)
+	decodeErr := decoder.Decode(&request)
+	if decodeErr != nil {
+		log.Fatal(decodeErr)
+		http.Error(writer, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	err := sc.dal.RemoveSlotFromEvent(request.EventDisplayId, request.DisplayId)
 	if err != nil {
 		log.Fatal(err)
 		helpers.JsonResponse(writer, http.StatusOK, &helpers.GeneralResponse{

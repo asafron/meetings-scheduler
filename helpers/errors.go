@@ -17,6 +17,8 @@ var (
 	AuthenticationErrorConfirmationTokenNotValid = MakeError("Confirmation token is not valid")
 
 	EventsErrorNotFound = MakeError("Event not found")
+
+	SlotsErrorNotFound = MakeError("Slot not found")
 )
 
 func MakeError(msg string) error {
