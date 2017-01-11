@@ -89,6 +89,7 @@ type EnvConfig struct {
 	AdminAuth                    string `yaml:"admin_auth"`
 	DashboardBaseUrl             string `yaml:"dashboard_base_url"`
 	SessionKey                   string `yaml:"session_key"`
+	GuestWebsiteUrl              string `yaml:"guest_website_url"`
 }
 
 func (configWrapper *ConfigWrapper) GetCurrent() *EnvConfig {

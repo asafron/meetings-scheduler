@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/asafron/meetings-scheduler/models"
+	"fmt"
+	"github.com/asafron/meetings-scheduler/config"
 )
 
 type (
@@ -28,7 +30,11 @@ func NewEventsController(dal *db.DAL) *EventsController {
 }
 
 func (ec EventsController) GetEventsForUser(writer http.ResponseWriter, req *http.Request) {
-	events := ec.dal.GetEventsForUser(helpers.GetCurrentUser(req).DisplayId)
+	events := *ec.dal.GetEventsForUser(helpers.GetCurrentUser(req).DisplayId)
+	for index, element := range events {
+		events[index].GuestWebsite = fmt.Sprintf("%s/%s", config.GetConfigWrapper().GetCurrent().GuestWebsiteUrl, element.DisplayId)
+	}
+
 	m := make(map[string]interface{})
 	m["events"] = events
 	helpers.JsonResponse(writer, http.StatusOK, &helpers.GeneralResponse{

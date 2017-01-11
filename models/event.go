@@ -6,12 +6,13 @@ import (
 )
 
 type Event struct {
-	Id        bson.ObjectId `json:"id" bson:"_id"`
-	DisplayId string        `json:"display_id" bson:"display_id"`
-	AdminUser string        `json:"admin_user" bson:"admin_user"`
-	Slots     []Slot        `json:"slots" bson:"slots"`
-	Name      string        `json:"name" bson:"name"`
-	Meetings  []Meeting     `json:"meetings" bson:"meetings"`
-	CreatedAt time.Time     `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at" bson:"updated_at"`
+	Id           bson.ObjectId `json:"id" bson:"_id"`
+	DisplayId    string        `json:"display_id" bson:"display_id"`
+	AdminUser    string        `json:"admin_user" bson:"admin_user"`
+	Slots        []Slot        `json:"slots" bson:"slots"`
+	Name         string        `json:"name" bson:"name"`
+	Meetings     []Meeting     `json:"meetings" bson:"meetings"`
+	GuestWebsite string        `json:"guest_website" bson:"-"`
+	CreatedAt    time.Time     `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at" bson:"updated_at"`
 }
